@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* HelperPanel (redesigned popup) micro-interactions. Kept here — not in the
+   component's <style> — so BOTH the popup and the Shadow-DOM content panel pick
+   them up (the content script injects this stylesheet via `?inline`; an SFC
+   <style> block would only reach the popup). */
+.lz-tabs {
+  scrollbar-width: none;
+}
+.lz-tabs::-webkit-scrollbar {
+  display: none;
+}
+.lz-cta,
+.lz-step {
+  transition: transform 0.12s ease, filter 0.14s ease, box-shadow 0.14s ease,
+    background 0.14s ease, border-color 0.14s ease;
+}
+.lz-cta:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+.lz-cta:active,
+.lz-step:active {
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lz-cta,
+  .lz-step {
+    transition: none;
+  }
+}

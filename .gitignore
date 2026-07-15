@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-zip
+.chrome-debug-profile*/
+*.crx
+*.pem
+*.local
+.env
+.env.local
+.DS_Store
+memories/
+

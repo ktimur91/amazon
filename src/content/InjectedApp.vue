@@ -7,7 +7,6 @@ import {
   ExternalLink,
   FileArchive,
   FileText,
-  Files,
   Image as ImageIcon,
   LoaderCircle,
   Plus,
@@ -18,7 +17,6 @@ import {
   ThumbsUp,
   Trash2,
   TriangleAlert,
-  Video as VideoIcon,
   X,
 } from "@lucide/vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
@@ -168,7 +166,7 @@ const LAST_PRESET_KEY = "lz_last_preset_v1";
 const showListingConfig = ref(false);
 const presets = ref<ListingPreset[]>([]);
 const loadingPresets = ref(false);
-const selectedPresetId = ref("universal");
+const selectedPresetId = ref("amazon");
 const listingLang = ref<LocaleCode>("en");
 const extraInstructions = ref("");
 const showSavePreset = ref(false);
@@ -553,7 +551,7 @@ async function onGenerateListing(): Promise<void> {
   newPresetName.value = "";
   const stored = await chrome.storage.local.get(LAST_PRESET_KEY);
   selectedPresetId.value =
-    typeof stored[LAST_PRESET_KEY] === "string" ? stored[LAST_PRESET_KEY] : "universal";
+    typeof stored[LAST_PRESET_KEY] === "string" ? stored[LAST_PRESET_KEY] : "amazon";
   showListingConfig.value = true;
   void loadPresets();
 }
@@ -561,7 +559,7 @@ async function onGenerateListing(): Promise<void> {
 // The actual generation, triggered from the config modal's "Generate" button.
 async function runGenerateListing(): Promise<void> {
   if (generatingListing.value) return;
-  const presetId = selectedPresetId.value || "universal";
+  const presetId = selectedPresetId.value || "amazon";
   const lang = listingLang.value;
   const extra = extraInstructions.value.trim();
   await chrome.storage.local.set({ [LAST_PRESET_KEY]: presetId });
@@ -659,7 +657,7 @@ async function saveCurrentPreset(): Promise<void> {
 
 async function removePreset(id: string): Promise<void> {
   await send({ type: "DELETE_PRESET", id });
-  if (selectedPresetId.value === id) selectedPresetId.value = "universal";
+  if (selectedPresetId.value === id) selectedPresetId.value = "amazon";
   await loadPresets();
 }
 
@@ -1162,39 +1160,18 @@ onUnmounted(() => {
         </div>
       </section>
 
-      <div class="tw-mb-4 tw-grid tw-grid-cols-3 tw-gap-2.5">
+      <!-- Photos-only: Amazon streams video via HLS, so media is images only. -->
+      <div
+        class="tw-mb-4 tw-flex tw-items-center tw-justify-center tw-gap-3 tw-rounded-xl tw-border tw-border-slate-200 tw-bg-slate-50 tw-px-4 tw-py-4"
+      >
         <div
-          class="tw-rounded-xl tw-border tw-border-slate-200 tw-bg-slate-50 tw-p-3 tw-text-center"
+          class="tw-flex tw-h-9 tw-w-9 tw-items-center tw-justify-center tw-rounded-lg tw-bg-indigo-50 tw-text-indigo-700"
         >
-          <div
-            class="tw-mx-auto tw-mb-1 tw-flex tw-h-7 tw-w-7 tw-items-center tw-justify-center tw-rounded-lg tw-bg-indigo-50 tw-text-indigo-700"
-          >
-            <ImageIcon class="tw-h-4 tw-w-4" />
-          </div>
-          <div class="tw-text-[1.125rem] tw-font-semibold tw-text-slate-900">{{ dlPhotos }}</div>
-          <div class="tw-text-[0.6875rem] tw-text-slate-400">{{ tr("photos") }}</div>
+          <ImageIcon class="tw-h-5 tw-w-5" />
         </div>
-        <div
-          class="tw-rounded-xl tw-border tw-border-slate-200 tw-bg-slate-50 tw-p-3 tw-text-center"
-        >
-          <div
-            class="tw-mx-auto tw-mb-1 tw-flex tw-h-7 tw-w-7 tw-items-center tw-justify-center tw-rounded-lg tw-bg-indigo-50 tw-text-indigo-700"
-          >
-            <VideoIcon class="tw-h-4 tw-w-4" />
-          </div>
-          <div class="tw-text-[1.125rem] tw-font-semibold tw-text-slate-900">{{ dlVideos }}</div>
-          <div class="tw-text-[0.6875rem] tw-text-slate-400">{{ tr("videos") }}</div>
-        </div>
-        <div
-          class="tw-rounded-xl tw-border tw-border-slate-200 tw-bg-slate-50 tw-p-3 tw-text-center"
-        >
-          <div
-            class="tw-mx-auto tw-mb-1 tw-flex tw-h-7 tw-w-7 tw-items-center tw-justify-center tw-rounded-lg tw-bg-indigo-50 tw-text-indigo-700"
-          >
-            <Files class="tw-h-4 tw-w-4" />
-          </div>
-          <div class="tw-text-[1.125rem] tw-font-semibold tw-text-slate-900">{{ dlTotal }}</div>
-          <div class="tw-text-[0.6875rem] tw-text-slate-400">{{ tr("total") }}</div>
+        <div class="tw-flex tw-items-baseline tw-gap-1.5">
+          <span class="tw-text-[1.375rem] tw-font-semibold tw-text-slate-900">{{ dlPhotos }}</span>
+          <span class="tw-text-[14px] tw-text-slate-500">{{ tr("photos") }}</span>
         </div>
       </div>
 
@@ -1365,9 +1342,9 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- Target platform (preset). Hidden on Amazon: the target is always Amazon. -->
-      <label v-if="marketplace !== 'amazon'" class="tw-mb-1 tw-block tw-text-[13px] tw-font-medium tw-text-slate-700">{{ tr("platformLabel") }}</label>
-      <div v-if="marketplace !== 'amazon'" class="tw-mb-3 tw-flex tw-items-center tw-gap-2">
+      <!-- Target platform (preset): where the seller will publish the listing. -->
+      <label class="tw-mb-1 tw-block tw-text-[13px] tw-font-medium tw-text-slate-700">{{ tr("platformLabel") }}</label>
+      <div class="tw-mb-3 tw-flex tw-items-center tw-gap-2">
         <select
           v-model="selectedPresetId"
           class="tw-min-w-0 tw-flex-1 tw-rounded-xl tw-border tw-border-slate-300 tw-px-3 tw-py-2 tw-text-sm tw-text-slate-800 focus:tw-border-indigo-400 focus:tw-outline-none"

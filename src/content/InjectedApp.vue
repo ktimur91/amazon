@@ -258,22 +258,37 @@ function slugifyTitle(title: string): string {
 }
 
 /// Best-effort main product image URL for history thumbnails. We never store the
-/// file — just the link — so the dashboard/panel can show what the product is
-/// (long titles alone are ambiguous). Prefers og:image (stable across AliExpress), then the first reasonably-large gallery image.
+/// file — just the link — so the dashboard/panel can show what the product is.
+/// Amazon has NO og:image and a generic <img> scan grabs the nav sprite, so we
+/// take the adapter's own gallery first (the real product image), then
+/// #landingImage, then og:image, then a filtered large content image.
 function currentProductImage(): string | undefined {
+  const ok = (s?: string | null): string | undefined =>
+    s && /^https?:\/\//.test(s) ? s : undefined;
+
+  const fromAdapter = adapter?.parseMedia?.().find((m) => m.type === "image")?.url;
+  if (ok(fromAdapter)) return fromAdapter;
+
+  const landing = document.querySelector<HTMLImageElement>("#landingImage");
+  const landingSrc = ok(landing?.currentSrc || landing?.src);
+  if (landingSrc) return landingSrc;
+
   const og = document
     .querySelector<HTMLMetaElement>('meta[property="og:image"], meta[name="og:image"]')
     ?.content?.trim();
-  if (og && /^https?:\/\//.test(og)) return og;
-  const imgs = Array.from(document.querySelectorAll<HTMLImageElement>("img"));
-  const candidate = imgs.find(
-    (img) =>
-      /^https?:\/\//.test(img.currentSrc || img.src) &&
+  if (ok(og)) return og;
+
+  // Last resort: a large content image that isn't an Amazon sprite/nav/icon.
+  const candidate = Array.from(document.querySelectorAll<HTMLImageElement>("img")).find((img) => {
+    const s = img.currentSrc || img.src;
+    return (
+      ok(s) &&
+      !/sprite|nav-sprite|\/gno\/|\/icons?\//i.test(s) &&
       img.naturalWidth >= 200 &&
-      img.naturalHeight >= 200,
-  );
-  const src = candidate?.currentSrc || candidate?.src;
-  return src && /^https?:\/\//.test(src) ? src : undefined;
+      img.naturalHeight >= 200
+    );
+  });
+  return ok(candidate?.currentSrc || candidate?.src);
 }
 
 function showCachedAnalysis(entry: HistoryEntry): void {

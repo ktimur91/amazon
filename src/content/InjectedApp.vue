@@ -232,10 +232,17 @@ const modalTitle = computed(() =>
 );
 
 function currentProductTitle(): string {
+  // Prefer the marketplace adapter's own selector (Amazon: #productTitle) — a
+  // generic <h1> grab picks up the wrong heading on Amazon. Fall back to the
+  // page title (strip the "Amazon.com: … : Electronics" chrome) then the URL.
+  const fromAdapter = adapter?.productTitle?.()?.trim();
   const heading = document.querySelector("h1")?.textContent?.trim();
-  return (
-    heading || document.title.replace(/\s*\|\s*.*$/, "").trim() || location.href
-  );
+  const docTitle = document.title
+    .replace(/^Amazon\.[a-z.]+\s*:\s*/i, "")
+    .replace(/\s*:\s*[^:]*$/, "")
+    .replace(/\s*\|\s*.*$/, "")
+    .trim();
+  return fromAdapter || heading || docTitle || location.href;
 }
 
 // Filesystem-safe ZIP base name from the product title — stable across

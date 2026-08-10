@@ -71,6 +71,13 @@ function parseMedia(root: ParentNode = document): MediaItem[] {
   return [...items.values()];
 }
 
+// Product title lives in `#productTitle` (a <span>, not an <h1>) — so a generic
+// `<h1>` grab picks up the wrong element (e.g. an assistant sidebar heading).
+function parseTitle(root: ParentNode = document): string | null {
+  const t = root.querySelector("#productTitle")?.textContent?.trim();
+  return t && t.length > 1 ? t.replace(/\s+/g, " ") : null;
+}
+
 // Amazon reviews are capped + curated (see header) — no DOM fallback either.
 function parseReviews(_root: ParentNode = document): ReviewItem[] {
   return [];
@@ -310,6 +317,7 @@ export const amazonAdapter: MarketplaceAdapter = {
     return asin ? `amazon-${asin}` : productSlugFromUrl(url);
   },
   parseMedia,
+  productTitle: parseTitle,
   parseReviews,
   fetchMedia,
   fetchReviews,

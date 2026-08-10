@@ -49,6 +49,11 @@ export interface MarketplaceAdapter {
   /** Collect downloadable product media from the page DOM. */
   parseMedia(root?: ParentNode): MediaItem[];
 
+  /** The product's title from the page DOM (e.g. Amazon's `#productTitle`).
+   *  Marketplace-specific because a generic `<h1>` grab picks up the wrong
+   *  element on some sites. Returns null when not on a product page. */
+  productTitle?(root?: ParentNode): string | null;
+
   /** DOM fallback review scraper. Not on the hot path (reviews normally come
    *  from `fetchReviews`), but kept as a per-marketplace capability. */
   parseReviews(root?: ParentNode): ReviewItem[];

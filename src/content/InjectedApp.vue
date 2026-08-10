@@ -1350,9 +1350,9 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- Target platform (preset) -->
-      <label class="tw-mb-1 tw-block tw-text-[13px] tw-font-medium tw-text-slate-700">{{ tr("platformLabel") }}</label>
-      <div class="tw-mb-3 tw-flex tw-items-center tw-gap-2">
+      <!-- Target platform (preset). Hidden on Amazon: the target is always Amazon. -->
+      <label v-if="marketplace !== 'amazon'" class="tw-mb-1 tw-block tw-text-[13px] tw-font-medium tw-text-slate-700">{{ tr("platformLabel") }}</label>
+      <div v-if="marketplace !== 'amazon'" class="tw-mb-3 tw-flex tw-items-center tw-gap-2">
         <select
           v-model="selectedPresetId"
           class="tw-min-w-0 tw-flex-1 tw-rounded-xl tw-border tw-border-slate-300 tw-px-3 tw-py-2 tw-text-sm tw-text-slate-800 focus:tw-border-indigo-400 focus:tw-outline-none"

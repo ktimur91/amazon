@@ -4,7 +4,7 @@
     "description": "Extension name shown in the Chrome Web Store and toolbar."
   },
   "extDesc": {
-    "message": "Анализ товара на Amazon для продавцов: продажи за месяц, оценка перспективности и калькулятор маржи + загрузчик фото и AI-генератор карточек.",
+    "message": "Анализ товара на Amazon: продажи за месяц, оценка перспективности, калькулятор маржи, загрузчик фото и AI-генератор карточек.",
     "description": "Short summary shown under the name in the Chrome Web Store."
   }
 }

@@ -11,8 +11,10 @@ localized variant. All store images live in `store-assets/`; the build ZIP is in
 - RU: **Amazon: анализ спроса и загрузчик фото + AI-карточки**
 
 ## Short description / summary (from `_locales`)
-- EN: Amazon product research for sellers: monthly sales, opportunity score & margin calculator + image downloader and AI listing generator.
-- RU: Анализ товара на Amazon для продавцов: продажи за месяц, оценка перспективности и калькулятор маржи + загрузчик фото и AI-генератор карточек.
+- EN: Amazon product research for sellers: monthly sales, opportunity score, margin calculator, photo downloader & AI listing generator.
+- RU: Анализ товара на Amazon: продажи за месяц, оценка перспективности, калькулятор маржи, загрузчик фото и AI-генератор карточек.
+
+> Both summaries are ≤132 chars (the store's hard limit for the short description).
 
 ## Category
 **Workflow & Planning** ("Работа и планирование") — a B2B tool for Amazon sellers, matching the other HelpTools extensions.

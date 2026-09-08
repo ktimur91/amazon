@@ -36,8 +36,8 @@ const messages = {
     invalidLicense: "Invalid license key",
     proActivated: "PRO activated",
     disclaimer:
-      "AI review analysis runs on our secure backend — no API keys required. Free plan: 3 actions/day. Upgrade to PRO for unlimited usage.",
-    downloadMedia: "Download media (ZIP)",
+      "AI demand research and listing generation run on our secure backend — no API keys required. Free daily allowances apply.",
+    downloadMedia: "Download images (ZIP)",
     packing: "Packing...",
     analyzeReviews: "Analyze reviews (AI)",
     analyzing: "Analyzing...",
@@ -70,7 +70,7 @@ const messages = {
     demandPrice: "Price",
     demandRating: "Rating",
     demandDisclaimer:
-      'Marketplace "sold" counts are approximate — treat this as a rough read, not exact figures.',
+      "The \"sold\" figure is Amazon's own \"bought in past month\" count (rounded, e.g. 6K+); revenue is an estimate based on it.",
     demandTipScore:
       "Overall 0–100 score of how attractive this product's niche is. Combines demand and the quality gap.",
     demandTipDemand:
@@ -79,6 +79,11 @@ const messages = {
       "Room to do better: a low rating with real demand means you can win by improving it. Counted only when there's demand.",
     demandTipSold:
       'Units sold per the marketplace page. Often lifetime; hidden for some products (then "—").',
+    demandEstimated: "estimated",
+    demandTipEstimated:
+      "This listing shows no sales figure, so the demand score is inferred from review volume alone — not from measured sales. Treat it as a weak signal.",
+    demandNoSalesNote:
+      "No sales figure on this listing, so demand is inferred from review volume rather than measured.",
     demandTipRevenue: "Rough estimate: units sold × price. A ballpark, not an exact figure.",
     demandTipPrice: "Current product price (or the range across variants).",
     demandTipRating: "Average rating 0–5, with the number of reviews in brackets.",
@@ -143,6 +148,8 @@ const messages = {
     closeHelper: "Close helper",
     openHelper: "Open helper",
     mediaReady: "Media archive ready",
+    mediaNotSaved:
+      "The download didn't finish, so nothing was saved. Check your browser's downloads and try again.",
     savedItems: 'Saved {count} item(s) to "{zipName}".',
     freeLimitReached: "Daily limit reached",
     freeLimitText:
@@ -175,7 +182,7 @@ const messages = {
     authCodeHint: "Enter the 6-digit code",
     authError: "Something went wrong — try again",
     showFloatingButton: "Show floating button on product pages",
-    openProductPage: "Open an AliExpress product page first.",
+    openProductPage: "Open an Amazon product page first.",
     total: "Total",
     avg: "Avg",
     positive: "Positive",
@@ -216,8 +223,8 @@ const messages = {
     invalidLicense: "Неверный ключ лицензии",
     proActivated: "PRO активирован",
     disclaimer:
-      "AI-анализ отзывов работает на защищенном backend — API-ключи не нужны. Бесплатный план: 3 действия в день. PRO снимает лимит.",
-    downloadMedia: "Скачать медиа (ZIP)",
+      "AI-анализ спроса и генерация карточек работают на защищённом backend — API-ключи не нужны. Действуют бесплатные дневные лимиты.",
+    downloadMedia: "Скачать фото (ZIP)",
     packing: "Упаковываем...",
     analyzeReviews: "Анализ отзывов (AI)",
     analyzing: "Анализируем...",
@@ -250,7 +257,7 @@ const messages = {
     demandPrice: "Цена",
     demandRating: "Рейтинг",
     demandDisclaimer:
-      "Счётчики «продано» на маркетплейсах приблизительны — это грубая оценка, а не точные цифры.",
+      "«Продано» - это данные самого Amazon («bought in past month», округлённо, напр. 6K+); выручка - оценка на их основе.",
     demandTipScore:
       "Итоговый балл 0–100: насколько перспективна ниша товара. Складывается из спроса и зазора качества.",
     demandTipDemand:
@@ -259,6 +266,11 @@ const messages = {
       "Запас для роста: низкий рейтинг при живом спросе = можно сделать лучше и выиграть. Учитывается только при наличии спроса.",
     demandTipSold:
       "Сколько продано по данным страницы. Часто за всё время; у части товаров скрыто (тогда «—»).",
+    demandEstimated: "оценка",
+    demandTipEstimated:
+      "На этой карточке нет данных о продажах, поэтому спрос выведен только из числа отзывов, а не измерен. Считайте это слабым сигналом.",
+    demandNoSalesNote:
+      "На карточке нет данных о продажах — спрос выведен из числа отзывов, а не измерен.",
     demandTipRevenue: "Грубая оценка: продано × цена. Ориентир, не точная цифра.",
     demandTipPrice: "Текущая цена товара (или диапазон по вариантам).",
     demandTipRating: "Средний рейтинг 0–5 и число отзывов в скобках.",
@@ -323,6 +335,8 @@ const messages = {
     closeHelper: "Закрыть помощник",
     openHelper: "Открыть помощник",
     mediaReady: "Архив медиа готов",
+    mediaNotSaved:
+      "Загрузка не завершилась — файл не сохранён. Проверьте загрузки браузера и попробуйте снова.",
     savedItems: 'Сохранено файлов: {count}. Архив: "{zipName}".',
     freeLimitReached: "Дневной лимит исчерпан",
     freeLimitText:
@@ -355,7 +369,7 @@ const messages = {
     authCodeHint: "Введите 6-значный код",
     authError: "Что-то пошло не так — попробуйте ещё раз",
     showFloatingButton: "Показывать плавающую кнопку на странице товара",
-    openProductPage: "Сначала откройте страницу товара AliExpress.",
+    openProductPage: "Сначала откройте страницу товара Amazon.",
     total: "Всего",
     avg: "Средняя",
     positive: "Позитивные",
@@ -417,7 +431,7 @@ const messages = {
     demandPrice: "Бағасы",
     demandRating: "Рейтинг",
     demandDisclaimer:
-      "Маркетплейстегі «сатылған» саны шамамен — нақты сан емес, шамалап бағалаңыз.",
+      "«Сатылған» - Amazon-ның өз дерегі («bought in past month», дөңгелектелген, мыс. 6K+); түсім - соның негізіндегі бағалау.",
     demandTipScore:
       "Тауар нишасының тартымдылығының 0–100 жалпы балы. Сұраныс пен сапа алшақтығынан құралады.",
     demandTipDemand:
@@ -522,7 +536,7 @@ const messages = {
     videos: "Видео",
     mediaSavedTo: "«Жүктеулер» қалтасына сақталды",
     showFloatingButton: "Тауар бетінде қалқымалы түймені көрсету",
-    openProductPage: "Алдымен AliExpress тауар бетін ашыңыз.",
+    openProductPage: "Алдымен Amazon тауар бетін ашыңыз.",
     total: "Барлығы",
     avg: "Орташа",
     positive: "Оң",
@@ -560,7 +574,7 @@ const messages = {
     demandPrice: "Prix",
     demandRating: "Note",
     demandDisclaimer:
-      "Les ventes affichées sur la marketplace sont approximatives — un ordre de grandeur, pas des chiffres exacts.",
+      "« Vendus » correspond au chiffre d'Amazon (« bought in past month », arrondi, ex. 6K+) ; le revenu est une estimation basée dessus.",
     demandTipScore:
       "Score global 0–100 de l'attractivité de la niche du produit. Combine la demande et l'écart de qualité.",
     demandTipDemand:
@@ -667,7 +681,7 @@ const messages = {
     videos: "Vidéos",
     mediaSavedTo: "Enregistré dans vos Téléchargements",
     showFloatingButton: "Afficher le bouton flottant sur les pages produit",
-    openProductPage: "Ouvrez d'abord une page produit AliExpress.",
+    openProductPage: "Ouvrez d'abord une page produit Amazon.",
     total: "Total",
     avg: "Moy.",
     positive: "Positifs",
@@ -705,7 +719,7 @@ const messages = {
     demandPrice: "Harga",
     demandRating: "Rating",
     demandDisclaimer:
-      "Jumlah «terjual» di marketplace bersifat perkiraan — gambaran kasar, bukan angka pasti.",
+      "«Terjual» adalah angka resmi Amazon («bought in past month», dibulatkan, mis. 6K+); pendapatan adalah perkiraan berdasarkan angka itu.",
     demandTipScore:
       "Skor keseluruhan 0–100 seberapa menarik niche produk ini. Gabungan permintaan dan selisih kualitas.",
     demandTipDemand:
@@ -811,7 +825,7 @@ const messages = {
     videos: "Video",
     mediaSavedTo: "Disimpan ke folder Unduhan",
     showFloatingButton: "Tampilkan tombol mengambang di halaman produk",
-    openProductPage: "Buka dulu halaman produk AliExpress.",
+    openProductPage: "Buka dulu halaman produk Amazon.",
     total: "Total",
     avg: "Rata-rata",
     positive: "Positif",
@@ -849,7 +863,7 @@ const messages = {
     demandPrice: "Giá",
     demandRating: "Đánh giá",
     demandDisclaimer:
-      "Số lượng «đã bán» trên sàn chỉ là ước lượng — hãy xem như con số tương đối, không chính xác.",
+      "«Đã bán» là số liệu của chính Amazon («bought in past month», làm tròn, vd. 6K+); doanh thu là ước tính dựa trên đó.",
     demandTipScore:
       "Điểm tổng 0–100 cho biết ngách sản phẩm hấp dẫn ra sao. Kết hợp nhu cầu và khoảng cách chất lượng.",
     demandTipDemand:
@@ -956,7 +970,7 @@ const messages = {
     videos: "Video",
     mediaSavedTo: "Đã lưu vào thư mục Tải xuống",
     showFloatingButton: "Hiển thị nút nổi trên trang sản phẩm",
-    openProductPage: "Hãy mở trang sản phẩm AliExpress trước.",
+    openProductPage: "Hãy mở trang sản phẩm Amazon trước.",
     total: "Tổng",
     avg: "TB",
     positive: "Tích cực",
@@ -994,7 +1008,7 @@ const messages = {
     demandPrice: "Harga",
     demandRating: "Penilaian",
     demandDisclaimer:
-      "Jumlah «terjual» di marketplace adalah anggaran — anggap sebagai gambaran kasar, bukan angka tepat.",
+      "«Terjual» ialah angka Amazon sendiri («bought in past month», dibundarkan, cth. 6K+); hasil ialah anggaran berdasarkan angka itu.",
     demandTipScore:
       "Skor keseluruhan 0–100 sejauh mana niche produk ini menarik. Gabungan permintaan dan jurang kualiti.",
     demandTipDemand:
@@ -1101,7 +1115,7 @@ const messages = {
     videos: "Video",
     mediaSavedTo: "Disimpan ke folder Muat Turun",
     showFloatingButton: "Tunjukkan butang terapung pada halaman produk",
-    openProductPage: "Buka halaman produk AliExpress dahulu.",
+    openProductPage: "Buka halaman produk Amazon dahulu.",
     total: "Jumlah",
     avg: "Purata",
     positive: "Positif",
@@ -1139,7 +1153,7 @@ const messages = {
     demandPrice: "ราคา",
     demandRating: "คะแนน",
     demandDisclaimer:
-      "จำนวน «ขายแล้ว» บนมาร์เก็ตเพลสเป็นค่าโดยประมาณ — ใช้เป็นค่าคร่าว ๆ ไม่ใช่ตัวเลขที่แน่นอน",
+      "«ขายแล้ว» คือตัวเลขจาก Amazon เอง («bought in past month» ปัดเศษ เช่น 6K+) ส่วนรายได้เป็นค่าประมาณจากตัวเลขนี้",
     demandTipScore:
       "คะแนนรวม 0–100 บอกว่านิชของสินค้านี้น่าสนใจแค่ไหน รวมอุปสงค์กับช่องว่างคุณภาพ",
     demandTipDemand:
@@ -1246,7 +1260,7 @@ const messages = {
     videos: "วิดีโอ",
     mediaSavedTo: "บันทึกไปยังโฟลเดอร์ดาวน์โหลด",
     showFloatingButton: "แสดงปุ่มลอยบนหน้าสินค้า",
-    openProductPage: "กรุณาเปิดหน้าสินค้า AliExpress ก่อน",
+    openProductPage: "กรุณาเปิดหน้าสินค้า Amazon ก่อน",
     total: "ทั้งหมด",
     avg: "เฉลี่ย",
     positive: "เชิงบวก",
@@ -1284,7 +1298,7 @@ const messages = {
     demandPrice: "Presyo",
     demandRating: "Rating",
     demandDisclaimer:
-      "Ang bilang ng «nabenta» sa marketplace ay tantya lang — ituring na magaspang na pagtingin, hindi eksaktong numero.",
+      "Ang «nabenta» ay sariling bilang ng Amazon («bought in past month», bilugan, hal. 6K+); ang kita ay tantya batay dito.",
     demandTipScore:
       "Pangkalahatang 0–100 na score kung gaano kaakit-akit ang niche ng produktong ito. Pinagsama ang demand at quality gap.",
     demandTipDemand:
@@ -1391,7 +1405,7 @@ const messages = {
     videos: "Mga video",
     mediaSavedTo: "Na-save sa iyong Downloads folder",
     showFloatingButton: "Ipakita ang floating button sa mga product page",
-    openProductPage: "Magbukas muna ng AliExpress product page.",
+    openProductPage: "Magbukas muna ng Amazon product page.",
     total: "Kabuuan",
     avg: "Avg",
     positive: "Positibo",
@@ -1429,7 +1443,7 @@ const messages = {
     demandPrice: "價格",
     demandRating: "評分",
     demandDisclaimer:
-      "平台上的「已售」數量為估算值 — 請當作粗略參考，而非精確數字。",
+      "「已售」為 Amazon 官方數據（「bought in past month」，取整，如 6K+）；營收為據此的估算值。",
     demandTipScore:
       "0–100 的整體分數，反映此商品利基的吸引力。結合需求與品質差距。",
     demandTipDemand:
@@ -1533,7 +1547,7 @@ const messages = {
     videos: "影片",
     mediaSavedTo: "已儲存至「下載」資料夾",
     showFloatingButton: "在商品頁面顯示浮動按鈕",
-    openProductPage: "請先開啟 AliExpress 商品頁面。",
+    openProductPage: "請先開啟 Amazon 商品頁面。",
     total: "總計",
     avg: "平均",
     positive: "正面",
@@ -1571,7 +1585,7 @@ const messages = {
     demandPrice: "Prezzo",
     demandRating: "Valutazione",
     demandDisclaimer:
-      "I numeri di «venduti» sul marketplace sono approssimativi — un'indicazione di massima, non cifre esatte.",
+      "«Venduti» è il dato ufficiale di Amazon («bought in past month», arrotondato, es. 6K+); il fatturato è una stima basata su di esso.",
     demandTipScore:
       "Punteggio complessivo 0–100 di quanto è attraente la nicchia del prodotto. Combina domanda e divario di qualità.",
     demandTipDemand:
@@ -1678,7 +1692,7 @@ const messages = {
     videos: "Video",
     mediaSavedTo: "Salvato nella cartella Download",
     showFloatingButton: "Mostra il pulsante flottante nelle pagine prodotto",
-    openProductPage: "Apri prima una pagina prodotto AliExpress.",
+    openProductPage: "Apri prima una pagina prodotto Amazon.",
     total: "Totale",
     avg: "Media",
     positive: "Positive",
@@ -1716,7 +1730,7 @@ const messages = {
     demandPrice: "Preço",
     demandRating: "Avaliação",
     demandDisclaimer:
-      "Os números de «vendidos» no marketplace são aproximados — uma noção geral, não valores exatos.",
+      "«Vendidos» é o número da própria Amazon («bought in past month», arredondado, ex. 6K+); a receita é uma estimativa baseada nele.",
     demandTipScore:
       "Pontuação geral 0–100 de quão atrativo é o nicho deste produto. Combina procura e lacuna de qualidade.",
     demandTipDemand:
@@ -1823,7 +1837,7 @@ const messages = {
     videos: "Vídeos",
     mediaSavedTo: "Salvo na pasta Downloads",
     showFloatingButton: "Mostrar botão flutuante nas páginas de produto",
-    openProductPage: "Abra primeiro uma página de produto AliExpress.",
+    openProductPage: "Abra primeiro uma página de produto Amazon.",
     total: "Total",
     avg: "Méd.",
     positive: "Positivas",
@@ -1861,7 +1875,7 @@ const messages = {
     demandPrice: "Preis",
     demandRating: "Bewertung",
     demandDisclaimer:
-      "Die «Verkauft»-Zahlen im Marktplatz sind ungefähr — als grobe Orientierung zu verstehen, nicht als exakte Werte.",
+      "«Verkauft» ist Amazons eigene Zahl («bought in past month», gerundet, z. B. 6K+); der Umsatz ist eine darauf basierende Schätzung.",
     demandTipScore:
       "Gesamt-Score 0–100, wie attraktiv die Nische des Produkts ist. Kombiniert Nachfrage und Qualitätslücke.",
     demandTipDemand:
@@ -1968,7 +1982,7 @@ const messages = {
     videos: "Videos",
     mediaSavedTo: "Im Ordner „Downloads“ gespeichert",
     showFloatingButton: "Schaltfläche auf Produktseiten anzeigen",
-    openProductPage: "Öffnen Sie zuerst eine AliExpress-Produktseite.",
+    openProductPage: "Öffnen Sie zuerst eine Amazon-Produktseite.",
     total: "Gesamt",
     avg: "Ø",
     positive: "Positiv",
@@ -2006,7 +2020,7 @@ const messages = {
     demandPrice: "価格",
     demandRating: "評価",
     demandDisclaimer:
-      "マーケットプレイスの「販売数」は概算です — 正確な数値ではなく、おおよその目安として扱ってください。",
+      "「販売数」はAmazon自身の数値（「bought in past month」、概数、例: 6K+）です。売上はそれに基づく推定値です。",
     demandTipScore:
       "この商品ニッチの魅力度を示す 0〜100 の総合スコア。需要と品質ギャップを合わせたもの。",
     demandTipDemand:
@@ -2111,7 +2125,7 @@ const messages = {
     videos: "動画",
     mediaSavedTo: "「ダウンロード」フォルダに保存しました",
     showFloatingButton: "商品ページにフローティングボタンを表示",
-    openProductPage: "先に AliExpress の商品ページを開いてください。",
+    openProductPage: "先に Amazon の商品ページを開いてください。",
     total: "合計",
     avg: "平均",
     positive: "ポジティブ",
@@ -2149,7 +2163,7 @@ const messages = {
     demandPrice: "Precio",
     demandRating: "Valoración",
     demandDisclaimer:
-      "Las cifras de «vendidos» del marketplace son aproximadas — tómalas como una idea general, no como datos exactos.",
+      "«Vendidos» es la cifra de la propia Amazon («bought in past month», redondeada, p. ej. 6K+); los ingresos son una estimación basada en ella.",
     demandTipScore:
       "Puntuación global 0–100 de lo atractivo que es el nicho de este producto. Combina demanda y brecha de calidad.",
     demandTipDemand:
@@ -2256,7 +2270,7 @@ const messages = {
     videos: "Vídeos",
     mediaSavedTo: "Guardado en tu carpeta de Descargas",
     showFloatingButton: "Mostrar botón flotante en las páginas de producto",
-    openProductPage: "Abre primero una página de producto de AliExpress.",
+    openProductPage: "Abre primero una página de producto de Amazon.",
     total: "Total",
     avg: "Prom.",
     positive: "Positivas",

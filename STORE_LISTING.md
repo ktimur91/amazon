@@ -37,7 +37,20 @@ Grab all product photos from any Amazon page in one click, in original resolutio
 ▶ AI LISTING GENERATOR
 Turn a product page into a ready-to-publish Amazon listing — an SEO title, five selling-point bullets, a full description and backend search terms, written to Amazon's A9 search conventions. Save presets for how you like to write.
 
-15 interface languages. Your install is anonymous — no account required to start. The image downloader is free forever; the AI features include a free daily allowance, with PRO for unlimited use.
+▶ WORKS ON AMAZON WORLDWIDE
+Supported sites: amazon.com, .ca, .com.mx, .com.br, .co.uk, .de, .fr, .it, .es, .nl, .se, .pl, .com.be, .com.tr, .co.jp, .in, .sg, .com.au, .ae, .sa and .eg.
+
+▶ YOUR ACCOUNT, SYNCED
+Sign in to keep PRO across all your devices and review your history of demand checks, AI listings and downloads, grouped by site, in your account dashboard at helptools.org.
+
+▶ CLEAN, NON-INTRUSIVE UI
+A small floating button appears only on product pages. Everything runs from there or from the toolbar popup. 15 interface languages included.
+
+FREEMIUM
+Image downloads are always free and unlimited. The free plan also gives each AI feature (demand research and listing generation) its own daily allowance; PRO unlocks unlimited AI across all your devices. Manage your subscription in your account at helptools.org.
+
+PRIVACY
+We do not sell your data. Product details (title, price, rating, the monthly-sales figure and attributes) are sent to our processing backend only to generate the AI result you requested. See our privacy policy: https://helptools.org/privacy
 
 Not affiliated with, endorsed by, or sponsored by Amazon.
 
@@ -56,7 +69,20 @@ Amazon Helper — набор инструментов для анализа то
 ▶ AI-ГЕНЕРАТОР КАРТОЧЕК
 Превратите страницу товара в готовую карточку Amazon — SEO-заголовок, пять буллетов с выгодами, полное описание и backend-ключи под поиск A9. Сохраняйте пресеты под свой стиль.
 
-15 языков интерфейса. Установка анонимна — аккаунт не нужен. Загрузчик фото бесплатен навсегда; у AI-функций есть бесплатный дневной лимит, PRO снимает ограничения.
+▶ РАБОТАЕТ НА AMAZON ПО ВСЕМУ МИРУ
+Поддерживаемые сайты: amazon.com, .ca, .com.mx, .com.br, .co.uk, .de, .fr, .it, .es, .nl, .se, .pl, .com.be, .com.tr, .co.jp, .in, .sg, .com.au, .ae, .sa и .eg.
+
+▶ АККАУНТ И СИНХРОНИЗАЦИЯ
+Войдите в аккаунт, чтобы PRO работал на всех ваших устройствах, а история проверок спроса, AI-карточек и загрузок, сгруппированная по сайтам, была доступна в кабинете на helptools.org.
+
+▶ АККУРАТНЫЙ, НЕНАВЯЗЧИВЫЙ ИНТЕРФЕЙС
+Небольшая плавающая кнопка появляется только на страницах товаров. Всё запускается из неё или из попапа на панели браузера. 15 языков интерфейса.
+
+FREEMIUM
+Загрузка фото всегда бесплатна и без лимитов. В бесплатном плане у каждой AI-функции (анализ спроса и генерация карточек) есть свой дневной лимит; PRO снимает ограничения на всех устройствах. Управление подпиской - в кабинете на helptools.org.
+
+КОНФИДЕНЦИАЛЬНОСТЬ
+Мы не продаём ваши данные. Данные товара (название, цена, рейтинг, месячные продажи и характеристики) отправляются на наш бэкенд только для формирования запрошенного вами AI-результата. Политика конфиденциальности: https://helptools.org/privacy
 
 Не аффилировано с Amazon и не одобрено им.
 
@@ -96,7 +122,9 @@ Amazon Helper — набор инструментов для анализа то
 
 **Remote code:** No — all logic ships in the package; the backend returns JSON, not code.
 
-**Data disclosures:** select **Website content** because product URL, title, price, rating, monthly-sales signal and product attributes are sent to the HelpTools backend for the requested AI demand/listing action. If the user links an account, the extension also receives and displays the account email, so select the dashboard's applicable **Personally identifiable information / Authentication information** disclosure rather than claiming that no account data is handled. Confirm all three certification checkboxes only after they match the current implementation and privacy policy.
+**Data disclosures:** tick exactly two, the same pair the published AliExpress & 1688 listing declares (and passed review with): **Personally identifiable information** (the account email, shown once the user links an account) and **Website content** (product URL, title, price, rating, monthly-sales figure and attributes sent to the HelpTools backend only for the AI action the user requested). Nothing else. Then confirm all three certification checkboxes.
+
+**Support / contact (as on the other listings):** website https://helptools.org, support email tim.kutumbaev@gmail.com.
 
 ---
 

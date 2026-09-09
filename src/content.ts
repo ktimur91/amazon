@@ -1,4 +1,4 @@
-// Content script — Shadow-DOM-isolated Vue UI on aliexpress.ru / aliexpress.com
+// Content script — Shadow-DOM-isolated Vue UI on Amazon product pages.
 import { createApp, type App } from "vue";
 import VueTippy from "vue-tippy";
 import InjectedApp from "./content/InjectedApp.vue";
@@ -9,13 +9,28 @@ import tippyCss from "tippy.js/dist/tippy.css?inline";
 const HOST_ID = "lz-helper-root";
 let app: App | null = null;
 
+// How many times to re-check for product markup before concluding the URL is
+// product-shaped but the page isn't one (a not-found page, or a region block).
+const MAX_MOUNT_RETRIES = 6;
+const MOUNT_RETRY_MS = 500;
+let mountRetries = 0;
+
 /**
- * Detect whether the current URL is a product page (not search / home /
- * category). The per-marketplace URL shapes live in each adapter's
+ * Detect whether the current URL is shaped like a product page (not search /
+ * home / category). The per-marketplace URL shapes live in each adapter's
  * `isProductUrl`, so this stays marketplace-agnostic.
  */
-function isProductPage(): boolean {
+function isProductUrl(): boolean {
   return getAdapterByHost()?.isProductUrl(location.href) ?? false;
+}
+
+/**
+ * Detect whether the DOM actually holds a product. Amazon serves its
+ * "Page Not Found" page at a well-formed `/dp/<ASIN>` URL for any dead or
+ * region-blocked ASIN, so the URL alone is not enough to decide to mount.
+ */
+function hasProductMarkup(): boolean {
+  return getAdapterByHost()?.isProductPage?.() ?? true;
 }
 
 function mount(): void {
@@ -96,21 +111,40 @@ function unmount(): void {
 }
 
 function sync(): void {
-  if (isProductPage()) mount();
-  else unmount();
+  if (!isProductUrl()) {
+    mountRetries = 0;
+    unmount();
+    return;
+  }
+  if (hasProductMarkup()) {
+    mountRetries = 0;
+    mount();
+    return;
+  }
+  // Product-shaped URL with no product in the DOM. That is either a page still
+  // rendering or a not-found page — retry a bounded number of times, then leave
+  // the panel unmounted rather than offering actions that can only come back
+  // empty.
+  unmount();
+  if (mountRetries < MAX_MOUNT_RETRIES) {
+    mountRetries++;
+    setTimeout(sync, MOUNT_RETRY_MS);
+  }
 }
 
-// SPA navigation handling. AliExpress navigate via pushState in the PAGE's
-// main world. A content script runs in an isolated world, so monkey-patching
-// `history.pushState` here only catches navigations triggered from this script
-// — it never sees the marketplace's own routing. The reliable cross-world
-// approach is to poll `location.href` for changes.
+// Navigation handling. Amazon normally does full page loads, but it also swaps
+// the URL in place for some in-page transitions (variant pickers, back/forward
+// through cached views). A content script runs in an isolated world, so
+// monkey-patching `history.pushState` here only catches navigations triggered
+// from this script — it never sees the page's own routing. Polling
+// `location.href` is the reliable cross-world approach.
 let lastHref = location.href;
 function onMaybeLocationChange(): void {
   if (location.href === lastHref) return;
   lastHref = location.href;
-  // AliExpress swap the DOM asynchronously after the URL changes; give the
-  // new product page a moment to render before (re)mounting.
+  mountRetries = 0;
+  // The DOM is swapped asynchronously after the URL changes; give the new
+  // product page a moment to render before (re)mounting.
   setTimeout(sync, 400);
 }
 

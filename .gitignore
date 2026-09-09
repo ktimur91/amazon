@@ -1,6 +1,7 @@
 node_modules
 dist
 dist-zip
+vite.config.ts.timestamp-*.mjs
 .chrome-debug-profile*/
 *.crx
 *.pem
@@ -9,4 +10,3 @@ dist-zip
 .env.local
 .DS_Store
 memories/
-

@@ -120,7 +120,7 @@ const locale = ref<LocaleCode>("en");
 const floatingEnabled = ref(true);
 const history = ref<HistoryEntry[]>([]);
 // The product currently open — drives the "done" stepper state in HelperPanel.
-// Updated on SPA navigation (AliExpress don't reload between products).
+// Re-read on in-place URL changes (see the watcher in onMounted).
 const currentProductId = ref<string>(productIdFromUrl(location.href));
 
 const tr = (key: Parameters<typeof t>[1], params?: Parameters<typeof t>[2]) =>
@@ -156,7 +156,7 @@ const analyzingDemand = ref(false);
 const showDemand = ref(false);
 const demand = ref<DemandResult | null>(null);
 
-// SPA navigation watcher (AliExpress don't reload between products).
+// In-place URL change watcher (see the watcher set up in onMounted).
 let lastUrl = "";
 let urlWatcher: number | null = null;
 
@@ -359,8 +359,17 @@ async function onDownloadMedia(): Promise<void> {
       (adapter ? adapter.productSlug(location.href) : "product");
     const r = await send({ type: "DOWNLOAD_MEDIA", items, productSlug: slug });
     if (!r.ok) throw new Error(("error" in r && r.error) || "Download failed");
-    // Prefer the counts the background reports — for AliExpress it reads the gallery from the
-    // item-API gallery, not the DOM `items` collected here (which include junk).
+    // The background only reports completed:true once the browser has written
+    // the file to disk. A cancelled "save as" prompt, an interrupted transfer
+    // or a download still awaiting the user all come back false — in which case
+    // there is no file, so we must not claim success or log it to history.
+    const completed = "completed" in r && r.completed === true;
+    if (!completed) {
+      panelMessage.value = { kind: "err", text: tr("mediaNotSaved") };
+      return;
+    }
+    // Prefer the counts the background reports — it downloads from the adapter's
+    // own gallery source, not the DOM `items` collected here (which include junk).
     const photos =
       "photos" in r && typeof r.photos === "number"
         ? r.photos
@@ -495,30 +504,17 @@ async function onAnalyzeDemand(): Promise<void> {
   }
 }
 
-// Best-effort, marketplace-agnostic product context for the listing generator.
-// Generic selectors only — if they don't match, the AI still works from the
-// title. We deliberately skip price (too easy to scrape wrong).
+// Product context for the listing generator.
+//
+// The marketplace adapter names its own blocks (`productContext`) — generic
+// class-name heuristics are not merely weak here, they are wrong: on Amazon
+// `[class*="attribute"] li` matches the account-nav flyout ("Create a List",
+// "Your Saved Books") and `[class*="spec"] tr` matches the customer Q&A table,
+// so the model was being handed site chrome as product attributes while the
+// real spec table and subtitle went uncollected. We deliberately skip price
+// (too easy to scrape wrong).
 async function collectProductContext(): Promise<ListingContext> {
-  const ctx: ListingContext = {};
-  const crumbs = Array.from(
-    document.querySelectorAll<HTMLElement>(
-      '[class*="breadcrumb" i] a, nav[aria-label*="readcrumb" i] a',
-    ),
-  )
-    .map((a) => (a.textContent || "").trim())
-    .filter((t) => t && t.length < 40);
-  if (crumbs.length) ctx.category = crumbs.slice(-4).join(" > ");
-
-  const attrs: string[] = [];
-  document
-    .querySelectorAll<HTMLElement>(
-      '[class*="specification" i] li, [class*="attribute" i] li, [class*="spec" i] tr',
-    )
-    .forEach((el) => {
-      const t = (el.innerText || "").trim().replace(/\s+/g, " ");
-      if (t.length >= 3 && t.length <= 120) attrs.push(t);
-    });
-  if (attrs.length) ctx.attributes = [...new Set(attrs)].slice(0, 15);
+  const ctx: ListingContext = { ...(adapter?.productContext?.() ?? {}) };
 
   const cached = await getCachedAnalysis(location.href, locale.value);
   const a = cached?.analysis;
@@ -708,6 +704,13 @@ function fmtMoney(n: number | null | undefined, currency: string | null): string
   const s = n.toLocaleString(locale.value, { maximumFractionDigits: 2 });
   return currency ? `${s} ${currency}` : s;
 }
+// Amazon only prints "N bought in past month" on some listings (and suppresses
+// it entirely in some regions), so `sold` is frequently null. The backend still
+// returns a demand sub-score — inferred from review volume, not sales — and a
+// confident-looking full bar over no sales data reads as a real measurement.
+// We can't change the backend's scoring from here, so we label it instead.
+const demandIsEstimated = computed(() => demand.value?.sold == null);
+
 const demandTone = computed(() => {
   const s = demand.value?.opportunityScore ?? 0;
   if (s >= 66)
@@ -848,9 +851,10 @@ onMounted(() => {
   });
   chrome.runtime.onMessage.addListener(commandListener);
 
-  // AliExpress are SPAs: navigating between products doesn't reload the page
-  // (the content script stays mounted), so per-product UI must be re-evaluated
-  // on URL change — otherwise the "Download media" button keeps its previous
+  // Amazon normally does full page loads, but the URL can also change in place
+  // (variant pickers, back/forward through cached views) with the content
+  // script staying mounted. Per-product UI must therefore be re-evaluated on
+  // URL change — otherwise the "Download media" button keeps its previous
   // product's "downloaded" state, and stale result modals linger.
   lastUrl = location.href;
   urlWatcher = window.setInterval(() => {
@@ -1249,12 +1253,27 @@ onUnmounted(() => {
           </p>
           <div class="tw-mt-2 tw-space-y-1.5">
             <div class="tw-flex tw-items-center tw-gap-2">
-              <span class="tw-flex tw-w-32 tw-shrink-0 tw-cursor-help tw-items-center tw-gap-0.5 tw-whitespace-nowrap tw-text-[0.6875rem] tw-text-slate-400" v-tippy="tr('demandTipDemand')">
+              <span class="tw-flex tw-w-32 tw-shrink-0 tw-cursor-help tw-items-center tw-gap-0.5 tw-whitespace-nowrap tw-text-[0.6875rem] tw-text-slate-400" v-tippy="demandIsEstimated ? tr('demandTipEstimated') : tr('demandTipDemand')">
                 {{ tr("demandDemand") }}
+                <span
+                  v-if="demandIsEstimated"
+                  class="tw-rounded tw-bg-slate-100 tw-px-1 tw-py-px tw-text-[0.625rem] tw-font-semibold tw-uppercase tw-tracking-wide tw-text-slate-500"
+                >{{ tr("demandEstimated") }}</span>
                 <svg viewBox="0 0 24 24" class="tw-h-3 tw-w-3 tw-shrink-0 tw-text-slate-300" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
               </span>
+              <!-- No sales figure: render the bar hatched and grey rather than
+                   a solid fill, so it doesn't read as a measured quantity. -->
               <div class="tw-h-1.5 tw-flex-1 tw-rounded-full tw-bg-slate-100">
-                <div class="tw-h-full tw-rounded-full tw-bg-indigo-500" :style="{ width: Math.min(100, (demand.scoreBreakdown.demand / 60) * 100) + '%' }"></div>
+                <div
+                  class="tw-h-full tw-rounded-full"
+                  :class="demandIsEstimated ? 'tw-bg-slate-300' : 'tw-bg-indigo-500'"
+                  :style="{
+                    width: Math.min(100, (demand.scoreBreakdown.demand / 60) * 100) + '%',
+                    ...(demandIsEstimated
+                      ? { backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,.75) 0 2px, transparent 2px 4px)' }
+                      : {}),
+                  }"
+                ></div>
               </div>
             </div>
             <div class="tw-flex tw-items-center tw-gap-2">
@@ -1267,6 +1286,12 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
+          <p
+            v-if="demandIsEstimated"
+            class="tw-mt-2 tw-text-[0.6875rem] tw-leading-4 tw-text-slate-500"
+          >
+            {{ tr("demandNoSalesNote") }}
+          </p>
         </div>
       </section>
 

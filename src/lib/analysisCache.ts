@@ -8,7 +8,7 @@ import type {
 } from "./messages";
 import type { LocaleCode } from "./i18n";
 
-/// Site/group label from a product URL, e.g. "aliexpress.ru", "aliexpress.com".
+/// Site/group label from a product URL, e.g. "amazon.com", "amazon.co.uk".
 function siteFromUrl(input: string): string | undefined {
   try {
     return new URL(input).hostname.replace(/^www\./, "");

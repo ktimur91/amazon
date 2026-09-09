@@ -51,10 +51,107 @@ async function fetchAsBlob(url: string): Promise<Blob | null> {
   }
 }
 
-async function buildZip(items: MediaItem[], slug: string): Promise<string> {
+/** Outcome of a `chrome.downloads` job, once it reaches a terminal state. */
+interface DownloadOutcome {
+  /** True only when the browser reported `state: "complete"`. */
+  completed: boolean;
+  /** Final on-disk basename when known, else the requested name. */
+  filename: string;
+  /** Number of assets that were actually fetched and written into the ZIP. */
+  photos: number;
+  videos: number;
+}
+
+// How long to wait for the browser to finish writing the file. A download can
+// sit unfinished indefinitely when the browser is configured to ask where to
+// save each file, so we give up reporting on it rather than hanging the UI
+// forever. Giving up is NOT success — the caller still sees completed:false.
+const DOWNLOAD_WAIT_MS = 90_000;
+
+function basename(path: string): string {
+  const parts = path.split(/[\\/]/);
+  return parts[parts.length - 1] || path;
+}
+
+/**
+ * Resolve once download `id` reaches a terminal state.
+ *
+ * `chrome.downloads.download()` resolves as soon as the download is CREATED,
+ * which is long before the bytes are on disk — and it resolves even when the
+ * browser is still showing a "save as" prompt the user may cancel. Reporting
+ * success off that promise makes the UI claim a file was saved that may never
+ * exist, so every caller must wait for this instead.
+ */
+function waitForDownload(
+  id: number,
+  requested: string,
+  counts: { photos: number; videos: number },
+): Promise<DownloadOutcome> {
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = (outcome: DownloadOutcome): void => {
+      if (settled) return;
+      settled = true;
+      chrome.downloads.onChanged.removeListener(onChanged);
+      clearTimeout(timer);
+      resolve(outcome);
+    };
+
+    const finishFromItem = (item?: chrome.downloads.DownloadItem): void => {
+      if (!item) return;
+      if (item.state === "complete") {
+        finish({
+          completed: true,
+          filename: basename(item.filename) || requested,
+          ...counts,
+        });
+      } else if (item.state === "interrupted") {
+        // Includes USER_CANCELED when the save prompt is dismissed.
+        finish({ completed: false, filename: requested, ...counts });
+      }
+    };
+
+    function onChanged(delta: chrome.downloads.DownloadDelta): void {
+      if (delta.id !== id) return;
+      const next = delta.state?.current;
+      if (next !== "complete" && next !== "interrupted") return;
+      // Re-read the item so we report the real on-disk name (uniquify may have
+      // appended " (1)", and the save prompt lets the user rename it outright).
+      void chrome.downloads
+        .search({ id })
+        .then((items) => {
+          if (items[0]) finishFromItem(items[0]);
+          else finish({ completed: next === "complete", filename: requested, ...counts });
+        })
+        .catch(() =>
+          finish({ completed: next === "complete", filename: requested, ...counts }),
+        );
+    }
+
+    const timer = setTimeout(
+      () => finish({ completed: false, filename: requested, ...counts }),
+      DOWNLOAD_WAIT_MS,
+    );
+
+    chrome.downloads.onChanged.addListener(onChanged);
+
+    // Guard against the download having already finished before the listener
+    // was attached (small files can complete synchronously).
+    void chrome.downloads
+      .search({ id })
+      .then((items) => finishFromItem(items[0]))
+      .catch(() => undefined);
+  });
+}
+
+async function buildZip(items: MediaItem[], slug: string): Promise<DownloadOutcome> {
   const zip = new JSZip();
   const imgs = zip.folder("images")!;
-  const vids = zip.folder("videos")!;
+  // The videos folder is created lazily: Amazon serves product video as HLS
+  // only, so it is never populated here and an always-present empty folder
+  // just ships dead weight in every archive.
+  let vids: JSZip | null = null;
   let imgN = 0;
   let vidN = 0;
 
@@ -70,6 +167,7 @@ async function buildZip(items: MediaItem[], slug: string): Promise<string> {
         );
       } else {
         vidN++;
+        if (!vids) vids = zip.folder("videos")!;
         vids.file(
           `${String(vidN).padStart(3, "0")}.${extFromUrl(it.url, "mp4")}`,
           blob,
@@ -78,19 +176,23 @@ async function buildZip(items: MediaItem[], slug: string): Promise<string> {
     }),
   );
 
+  if (imgN + vidN === 0) {
+    throw new Error("Could not download any product images. Please try again.");
+  }
+
   const archive = await zip.generateAsync({ type: "blob" });
   const dataUrl = await blobToDataUrl(archive);
-  // Stable name from the product title (no timestamp). `prompt` on conflict so
-  // the browser warns when the same product was already downloaded, instead of
-  // silently saving "name (1).zip".
+  // Stable name from the product title (no timestamp). `uniquify` rather than
+  // `prompt`: a conflict prompt opens a modal "save as" panel that blocks the
+  // download until the user acts, and silently strands the file if they cancel.
   const filename = `${slug || "product"}.zip`;
-  await chrome.downloads.download({
+  const id = await chrome.downloads.download({
     url: dataUrl,
     filename,
     saveAs: false,
-    conflictAction: "prompt",
+    conflictAction: "uniquify",
   });
-  return filename;
+  return waitForDownload(id, filename, { photos: imgN, videos: vidN });
 }
 
 function blobToDataUrl(b: Blob): Promise<string> {
@@ -291,10 +393,11 @@ chrome.runtime.onMessage.addListener(
             // Media download is always free and unlimited; only review analysis
             // counts against the free daily quota.
             let items = msg.items;
-            // Prefer the marketplace's media API when the adapter exposes one
-            // (AliExpress): it returns the exact product gallery + video, whereas
-            // the DOM scrape pulls in page junk (recommendations, banners).
-            // Falls back to the DOM items the content script already collected.
+            // Prefer the adapter's own media fetcher when it exposes one: on
+            // Amazon it reads the inline `colorImages` gallery, which is the
+            // exact product gallery, whereas the DOM scrape also pulls in page
+            // junk (recommendations, banners). Falls back to the DOM items the
+            // content script already collected.
             const tabId = sender.tab?.id;
             const tabUrl = sender.tab?.url;
             if (tabId && tabUrl) {
@@ -315,12 +418,16 @@ chrome.runtime.onMessage.addListener(
               });
               return;
             }
-            const name = await buildZip(items, msg.productSlug);
+            // Waits for the browser to actually finish writing the file — a
+            // cancelled or interrupted download comes back completed:false so
+            // the UI can avoid claiming success (and avoid logging history).
+            const outcome = await buildZip(items, msg.productSlug);
             sendResponse({
               ok: true,
-              zipName: name,
-              photos: items.filter((m) => m.type === "image").length,
-              videos: items.filter((m) => m.type === "video").length,
+              zipName: outcome.filename,
+              completed: outcome.completed,
+              photos: outcome.photos,
+              videos: outcome.videos,
             });
             return;
           }

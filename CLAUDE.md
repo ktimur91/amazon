@@ -4,106 +4,159 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Manifest V3 Chrome extension — **"AliExpress Image & Video Downloader — Reviews & Listing AI"** —
-for AliExpress product pages. Four features: (1) bulk-download product photos/videos as a ZIP (no
-watermark), (2) **demand research** (price / rating / units-sold → opportunity score + AI verdict),
-(3) **AI review analysis** (negative-review summary/verdict), and (4) an **AI listing generator**
-(turn a product page into a ready-to-publish listing for Ozon/Wildberries/etc.). Built with
-Vue 3 + Vite + `@crxjs/vite-plugin` + Tailwind, TypeScript throughout.
+A Manifest V3 Chrome extension — **"Amazon Helper — Product Research, Media & Listing AI"**
+(`amazon-helper`, v1.0.0) — for Amazon product pages, aimed at FBA/FBM sellers doing product
+research. Vue 3 + Vite + `@crxjs/vite-plugin` + Tailwind (all utilities are `tw-` prefixed),
+TypeScript throughout.
 
-It is the **CIS-market sibling** of the Lazada/Shopee extension (`lazada-shopee/`): same codebase
-shape and shared backend, a different marketplace adapter. 1688 / Taobao are planned as additional
-adapters later (hence the repo name `aliexpress-1688`); for now it's AliExpress-only.
+**Three features ship** (see the stepper in [src/components/HelperPanel.vue](src/components/HelperPanel.vue)):
 
-This directory is one of several related repos (all are working directories in this session):
-- **`aliexpress-1688/`** (here) — this extension.
-- **`lazada-shopee/`** — the original SEA extension (Lazada + Shopee); the template this was forked from.
+1. **Demand research** — price / rating / rating-count / "N bought in past month" → backend
+   opportunity score + AI verdict.
+2. **Media download** — the product gallery bulk-downloaded as a ZIP, at original resolution.
+   **Images only** (see gotchas).
+3. **AI listing generator** — turn the product page into a ready-to-publish listing for a chosen
+   target platform (preset) and language.
+
+**Review analysis is deliberately NOT offered on Amazon.** Amazon serves only ~8 curated,
+mostly-positive reviews and ignores `pageNumber`/`filterByStar`, so a verdict over them would
+mislead a seller. `amazonAdapter.fetchReviews` returns `[]` with an explanatory `debug` string, and
+`HelperPanel.vue` omits the `analysis` step. The whole plumbing (message types, backend client,
+result modal, `analysis` quota) is intentionally left wired up in case Amazon opens reviews up —
+so **finding review code is not evidence the feature is live**.
+
+This is a fork of a Lazada/Shopee extension, which is why the internal prefix is `lz-` throughout
+(shadow host `#lz-helper-root`, console tag `[LZ-Helper]`, storage keys `lz_*`). That naming is
+load-bearing for existing installs' `chrome.storage` — don't rename it casually.
+
+Related repos (siblings, not vendored here):
+
 - **`extensions-backend/`** — shared Express/Prisma/Postgres backend at `https://api.helptools.org`.
-  Holds the OpenAI key, issues per-install tokens, runs review/demand/listing AI, stores history.
-  Serves multiple extensions keyed by `extensionId` / `appKey` (this one registers as `aliexpress`).
-- **`helptools-landing/`** — marketing/landing + account dashboard site (`helptools.org`).
+  Holds the OpenAI key, issues per-install tokens, runs the demand/listing AI, stores history.
+  Serves multiple extensions keyed by `extensionId` / `appKey`.
+- **`helptools-landing/`** — marketing/landing + account dashboard (`helptools.org`).
 
 ## Commands
 
 ```bash
 npm install
-npm run dev          # Vite dev server with HMR (load dist/ as an unpacked extension)
+npm run dev          # Vite dev server with HMR (still load dist/ as an unpacked extension)
 npm run build        # vue-tsc --noEmit && vite build  → dist/
-npm run typecheck    # vue-tsc --noEmit (Vue + extension TS)
+npm run typecheck    # vue-tsc --noEmit
 ```
 
-There is **no test suite and no linter**. CI ([.github/workflows/ci.yml](.github/workflows/ci.yml))
-runs only `npm run build` (which type-checks first). Treat a clean `build` as the bar for "it
-compiles". To load locally: `npm run build`, then Chrome → Extensions → Load unpacked → `dist/`.
+**No test suite and no linter.** CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs
+`npm run typecheck` then `npm run build` — a clean build is the only automated bar.
 `dist-zip/` holds versioned `.zip`s for Chrome Web Store submission.
+
+## The build-time manifest (read this before touching manifest.json)
+
+**`manifest.json` at the repo root is a TEMPLATE, not the shipped manifest.** Its
+`content_scripts[0].matches` is literally `[]` and its `host_permissions` lists only the
+non-marketplace hosts (the API + Amazon's image CDNs). [vite.config.ts](vite.config.ts) imports
+`MARKETPLACE_HOST_GLOBS` from [src/marketplaces/hosts.ts](src/marketplaces/hosts.ts) and injects
+those 21 Amazon TLD globs into **both** `content_scripts.matches` and `host_permissions` at build
+time. The real manifest is `dist/manifest.json`.
+
+Consequences:
+
+- **You must load `dist/`, never the repo root.** Loading the root as an unpacked extension yields
+  an extension whose content script matches nothing — it will install cleanly and do absolutely
+  nothing, with no error anywhere. This is the single most likely reason "the extension isn't working".
+- **Add domains to `hosts.ts`, not to `manifest.json`.** `hosts.ts` is the single source of truth
+  for host scope and is deliberately dependency-free (no DOM, no `chrome`, no Vue) so the Vite
+  config can import it at build time.
+- A `VITE_BACKEND_BASE_URL` pointing at `localhost`/`127.0.0.1` also gets appended to
+  `host_permissions` automatically, for local backend testing only.
 
 ## Architecture
 
-Three extension contexts communicate over `chrome.runtime`/`chrome.tabs` messaging; all message
-shapes live in [src/lib/messages.ts](src/lib/messages.ts) (`RequestMessage` / `ResponseMessage`) —
-**change message contracts there first**, then update all three sides.
+Three extension contexts talk over `chrome.runtime` messaging; every message shape lives in
+[src/lib/messages.ts](src/lib/messages.ts) (`RequestMessage` / `ResponseMessage`) — **change the
+contract there first**, then update all three sides.
 
 1. **Content script** ([src/content.ts](src/content.ts) → [src/content/InjectedApp.vue](src/content/InjectedApp.vue))
-   — a floating Vue panel in a **Shadow DOM** (`#lz-helper-root`) so marketplace CSS can't bleed in.
-   Only mounts on product pages. AliExpress is an SPA, so navigation is detected by **polling
-   `location.href`**, not history patching.
-2. **Background service worker** ([src/background.ts](src/background.ts)) — the workhorse: media
-   download (fetch each asset → JSZip → `chrome.downloads`), review fetch + AI analysis, demand, listing.
-3. **Popup** ([src/components/HelperPanel.vue](src/components/HelperPanel.vue)) — the main UI
-   (stage stepper, account card, history, language picker).
+   — a floating indigo FAB bottom-right that expands into a Vue panel, mounted in a **Shadow DOM**
+   (`#lz-helper-root`) so Amazon's CSS can't bleed in. Mounts only when
+   `adapter.isProductUrl(location.href)` is true. Logs `[LZ-Helper] mounted on <url>`.
+2. **Background service worker** ([src/background.ts](src/background.ts)) — the workhorse and the
+   message router: builds the ZIP (fetch each asset → JSZip → `chrome.downloads`), calls the
+   backend for demand/listing, enforces quotas via [src/lib/license.ts](src/lib/license.ts).
+3. **Popup** ([src/popup/App.vue](src/popup/App.vue)) — renders the same
+   [HelperPanel.vue](src/components/HelperPanel.vue) and drives the active tab by sending it
+   `UI_*` commands, which `InjectedApp.vue`'s `commandListener` handles.
 
-### Marketplace adapter pattern (the important part)
+### Marketplace adapter pattern
 
-Everything marketplace-specific lives behind one interface in
-[src/marketplaces/](src/marketplaces/): each marketplace is a `MarketplaceAdapter`
-([types.ts](src/marketplaces/types.ts)) registered in [index.ts](src/marketplaces/index.ts).
-**Adding a marketplace (1688, Taobao, …) = write one `src/marketplaces/<name>.ts` + register it +
-add its host globs to [hosts.ts](src/marketplaces/hosts.ts).** Nothing else needs to change:
-`hosts.ts` is the single source of truth for the manifest's `content_scripts.matches` AND
-`host_permissions` — `vite.config.ts` composes them into the manifest at build time (so
-`manifest.json` itself carries only the non-marketplace host perms: the API + the image/video CDNs).
+Everything Amazon-specific lives behind one interface in [src/marketplaces/](src/marketplaces/):
+`MarketplaceAdapter` ([types.ts](src/marketplaces/types.ts)), implemented by
+[amazon.ts](src/marketplaces/amazon.ts), registered in the `ADAPTERS` array in
+[index.ts](src/marketplaces/index.ts), host globs in [hosts.ts](src/marketplaces/hosts.ts).
+**Amazon is currently the only adapter** (`Marketplace = "amazon" | "unknown"`), so the registry is
+a one-element array — but the indirection is what lets `vite.config.ts` compose the manifest, so
+don't collapse it.
 
-### AliExpress data sources ([src/marketplaces/aliexpress.ts](src/marketplaces/aliexpress.ts))
+### Amazon data sources ([src/marketplaces/amazon.ts](src/marketplaces/amazon.ts))
 
-AliExpress runs **two distinct front-ends** and the adapter handles both:
+Verified live on amazon.com (2026-07-16). Both fetchers run in the page **MAIN world** via
+`chrome.scripting.executeScript`, so they must be **self-contained — no imports, no closures over
+module scope.**
 
-- **aliexpress.ru (AER)** — the **primary** target: CIS visitors hitting aliexpress.com are
-  geo-redirected here. It ships **no product data in the HTML** (a hydrating SPA); everything comes
-  from a same-origin JSON API, read in the page MAIN world:
-  `GET /aer-jsonapi/v1/bx/pdp/web/productData?productId=<id>&sourceId=0&sku_id=0` →
-  `data.gallery[]` (`{imageUrl, videoUrl}`, full-res), `data.price.{min,max}ActivityAmount`,
-  **`data.tradeInfo.tradeCount`** (units sold — AliExpress publishes it, unlike Lazada),
-  `data.rating.middle`, `data.reviews` (count). Full reviews come from a second
-  paginated JSON API: `POST /aer-jsonapi/review/v5/desktop/product-reviews?_bx-v=2.5.36`
-  with `{productKey:{id,sourceId:0}, pagination:{pageNum,pageSize:10}, filters:[], sort:1}`
-  → `data.reviews[].root.{grade,text}` (paged through in `aeReviewFetcher`, ~120 max).
-- **aliexpress.com / .us** — the global PDP embeds `window.runParams.data`
-  (`imageModule` / `titleModule.{tradeCount,feedbackRating}` / `priceModule`), read in the MAIN world.
+- **ASIN** — `/dp/<ASIN>`, `/gp/product/<ASIN>`, or `/gp/aw/d/<ASIN>`, 10 chars. This alone decides
+  "is this a product page".
+- **Media** — the gallery is embedded in an inline script as
+  `'colorImages': { 'initial': [ {"hiRes":…,"large":…,"thumb":…} ] }`. The outer keys are
+  single-quoted (not JSON) but the array is valid JSON, so it's bracket-matched out and parsed.
+  Stripping Amazon's size transform (`X._AC_SL1500_.jpg` → `X.jpg`) yields the original. Falls back
+  to `#landingImage`'s `data-a-dynamic-image` plus the `#altImages` thumb rail.
+- **Demand** — `#productTitle`, `.a-price .a-offscreen` (locale-aware money parsing),
+  `#acrPopover[title]` (`"4.6 out of 5 stars"`), `#acrCustomerReviewText` (`"(280)"`), and a
+  `body.innerText` regex for `"1K+ bought in past month"` — a genuine **monthly** sales figure.
 
-Item id comes from `/item/<digits>.html` (both front-ends).
+### Backend
 
-### AI backend
+[src/lib/api/backend.ts](src/lib/api/backend.ts), Bearer install-token auth. The extension
+registers once (`POST /v1/installs`), caches the opaque token + install id in
+`chrome.storage.local`, and re-registers on any 401 before retrying. **`EXTENSION_ID` is `"amazon"`
+and `postEvent` sends `appKey: "amazon"`** — both correct; the backend must have a matching
+extension/app entry registered.
 
-Review/demand/listing flows call the **helptools.org backend**
-([src/lib/api/backend.ts](src/lib/api/backend.ts), Bearer install-token auth). The extension
-registers an install once (`POST /v1/installs`, `extensionId: "aliexpress"`), caches the opaque
-token in `chrome.storage.local`, re-registers on 401. The backend keeps the OpenAI key server-side.
-**Backend wiring still TODO:** the backend must register this `extensionId`/`appKey` (`aliexpress`),
-accept `marketplace: "aliexpress"`, and use an AliExpress/CIS-appropriate demand prompt.
+Endpoints used: `/v1/installs`, `/v1/billing/status`, `/v1/events`, `/v1/auth/link-token`,
+`/v1/auth/unlink`, `/v1/demand/analyze`, `/v1/listing/generate`, `/v1/listing/presets`
+(GET/POST/DELETE), `/v1/analysis/reviews` (wired but unreachable on Amazon).
+
+Base URLs default to production and are overridable at build time: `VITE_BACKEND_BASE_URL`
+(default `https://api.helptools.org`), `VITE_ACCOUNT_URL` (default `https://helptools.org/account`).
+
+**Quotas: the backend is the source of truth.** [license.ts](src/lib/license.ts) mirrors per-feature
+daily usage from `/v1/billing/status` (3-minute sync TTL, forced on every panel open), resetting at
+UTC midnight. The `analysis: 10 / listing: 3 / demand: 2` figures in `license.ts`, `backend.ts` and
+`InjectedApp.vue` are **cold-start fallbacks only** — never treat them as the real limits. PRO makes
+`canConsume`/`consume` no-ops. Media download is free and unlimited, and is not a quota feature.
 
 ### i18n
 
 [src/lib/i18n.ts](src/lib/i18n.ts) holds all UI strings for **15 locales** in one file
 (`LOCALES`, `t(locale, key, params)`). Add user-facing strings as keys there, not inline.
+Separately, `public/_locales/{en,ru}/messages.json` backs only the two `__MSG_*` manifest fields
+(extension name and store description) — those two locales are not the UI locale set.
 
 ## Conventions & gotchas
 
-- **`hosts.ts` is the source of truth for host scope** — `vite.config.ts` injects those globs into
-  both `content_scripts.matches` and `host_permissions`. Add a domain there, not in `manifest.json`.
-- Code injected into the page MAIN world (`executeScript`) **cannot import** — keep those fetcher
-  functions self-contained (no imports, no closures over module scope).
-- The content panel lives in a Shadow DOM; styles come from `tailwind.css?inline`. Don't rely on
-  page styles.
-- The extension **icon is still the Lazada/Shopee placeholder** (`src/assets/icons/`) — replace with
-  an AliExpress-branded icon before store submission.
-- Secrets: `OPENAI_API_KEY` is server-side only (backend `.env`). Never put it in extension code.
+- **Load `dist/`, and rebuild after every change** — see the manifest section above.
+- **MAIN-world fetchers cannot import.** `amazonMediaFetcher` / `amazonDemandFetcher` are
+  serialized and injected; keep them self-contained.
+- **Media is images-only.** Amazon serves product video as HLS (`.m3u8`), which can't be packaged
+  into the ZIP as a single file. The download modal is hard-coded to show a photo count only.
+- **Navigation polling is intentional.** Amazon normally does full page loads, but variant and
+  cached-page transitions can change the URL in place. The content UI polls `location.href` so it
+  can reset product state without patching page-world history methods.
+- **The Shadow DOM panel gets no page styles** — Tailwind comes in via `tailwind.css?inline`, and
+  Tippy's CSS is injected into the same shadow root so tooltips render correctly.
+- **Store claims must match real features.** Amazon has no margin calculator or review-analysis
+  action. Keep `_locales`, `STORE_LISTING.md`, and `store-assets/` aligned with the three shipped
+  features above.
+- **Storage keys** (all `chrome.storage.local`): `backend_install_token`, `backend_install_id`,
+  `lz_license_v1`, `lz_locale_v1`, `lz_show_floating_panel_v1`, `lz_last_preset_v1`, plus the
+  history/cache keys in [analysisCache.ts](src/lib/analysisCache.ts).
+- **Secrets:** `OPENAI_API_KEY` is server-side only (backend `.env`). Never put it in extension code.

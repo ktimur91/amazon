@@ -49,6 +49,10 @@ export interface ActivityEventInput {
 export interface ListingContext {
   category?: string;
   price?: string;
+  /// The line under the product title. On Amazon this carries selling points
+  /// that are NOT in `#productTitle` (e.g. "100W PD charging, compatible with
+  /// …"), so omitting it loses headline features.
+  subtitle?: string;
   attributes?: string[];
   reviewSummary?: string;
   mediaCount?: number;
@@ -145,7 +149,17 @@ export type RequestMessage =
 
 export type ResponseMessage =
   | { ok: true; ts: number } // PING
-  | { ok: true; zipName: string; photos?: number; videos?: number } // DOWNLOAD_MEDIA
+  | {
+      ok: true;
+      zipName: string;
+      photos?: number;
+      videos?: number;
+      /// True only once the browser reports the file as fully written to disk.
+      /// False when the download was cancelled, interrupted, or is still
+      /// waiting on a "save as" prompt — callers must NOT claim success or
+      /// record history unless this is true.
+      completed: boolean;
+    } // DOWNLOAD_MEDIA
   | { ok: false; error: string }
   | {
       ok: true;

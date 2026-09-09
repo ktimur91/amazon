@@ -11,8 +11,8 @@ localized variant. All store images live in `store-assets/`; the build ZIP is in
 - RU: **Amazon: анализ спроса и загрузчик фото + AI-карточки**
 
 ## Short description / summary (from `_locales`)
-- EN: Amazon product research for sellers: monthly sales, opportunity score, margin calculator, photo downloader & AI listing generator.
-- RU: Анализ товара на Amazon: продажи за месяц, оценка перспективности, калькулятор маржи, загрузчик фото и AI-генератор карточек.
+- EN: Amazon product research for sellers: monthly sales, opportunity score, photo downloader & AI listing generator.
+- RU: Анализ товара на Amazon: продажи за месяц, оценка перспективности, загрузчик фото и AI-генератор карточек.
 
 > Both summaries are ≤132 chars (the store's hard limit for the short description).
 
@@ -29,12 +29,12 @@ English (default) · Russian (localized listing)
 Amazon Helper is a product-research toolkit for Amazon sellers (FBA/FBM), right on the product page.
 
 ▶ DEMAND RESEARCH
-Before you source a product, see whether it's worth it. The extension reads the product's monthly sales ("bought in past month"), price, rating and review count and returns an opportunity score (0–100) plus a short AI verdict — so you can tell saturated niches from promising ones at a glance. A built-in margin calculator turns buy/sell/shipping/fees into profit, margin % and ROI.
+Before you source a product, see whether it's worth it. The extension reads the product's monthly sales ("bought in past month"), price, rating and review count and returns an opportunity score (0–100) plus a short AI verdict — so you can tell saturated niches from promising ones at a glance. Where Amazon doesn't publish a sales figure, the score says so rather than implying one.
 
 ▶ IMAGE DOWNLOADER
 Grab all product photos from any Amazon page in one click, in original resolution, packed into a single ZIP — perfect for building your own listings, ads and research boards. Downloads are always free and unlimited.
 
-▶ AI LISTING GENERATOR (PRO)
+▶ AI LISTING GENERATOR
 Turn a product page into a ready-to-publish Amazon listing — an SEO title, five selling-point bullets, a full description and backend search terms, written to Amazon's A9 search conventions. Save presets for how you like to write.
 
 15 interface languages. Your install is anonymous — no account required to start. The image downloader is free forever; the AI features include a free daily allowance, with PRO for unlimited use.
@@ -48,12 +48,12 @@ Not affiliated with, endorsed by, or sponsored by Amazon.
 Amazon Helper — набор инструментов для анализа товаров на Amazon для продавцов (FBA/FBM), прямо на странице товара.
 
 ▶ АНАЛИЗ СПРОСА
-Прежде чем заходить в товар — проверьте, стоит ли. Расширение читает продажи за месяц («bought in past month»), цену, рейтинг и число отзывов и выдаёт оценку перспективности (0–100) и короткий AI-вердикт — чтобы с одного взгляда отличать перегретые ниши от перспективных. Встроенный калькулятор маржи считает прибыль, маржу % и ROI из закупки/продажи/доставки/комиссий.
+Прежде чем заходить в товар — проверьте, стоит ли. Расширение читает продажи за месяц («bought in past month»), цену, рейтинг и число отзывов и выдаёт оценку перспективности (0–100) и короткий AI-вердикт — чтобы с одного взгляда отличать перегретые ниши от перспективных. Если Amazon не публикует данные о продажах, оценка честно это показывает.
 
 ▶ ЗАГРУЗЧИК ФОТО
 Скачайте все фото товара с любой страницы Amazon в один клик, в оригинальном разрешении, одним ZIP — удобно для своих карточек, рекламы и ресёрча. Загрузка всегда бесплатна и без лимитов.
 
-▶ AI-ГЕНЕРАТОР КАРТОЧЕК (PRO)
+▶ AI-ГЕНЕРАТОР КАРТОЧЕК
 Превратите страницу товара в готовую карточку Amazon — SEO-заголовок, пять буллетов с выгодами, полное описание и backend-ключи под поиск A9. Сохраняйте пресеты под свой стиль.
 
 15 языков интерфейса. Установка анонимна — аккаунт не нужен. Загрузчик фото бесплатен навсегда; у AI-функций есть бесплатный дневной лимит, PRO снимает ограничения.
@@ -96,7 +96,7 @@ Amazon Helper — набор инструментов для анализа то
 
 **Remote code:** No — all logic ships in the package; the backend returns JSON, not code.
 
-**Data disclosures — check only "Website content"** (product data sent to the backend for AI). No email/auth collected by the extension (account linking happens on helptools.org). Confirm all three certification checkboxes.
+**Data disclosures:** select **Website content** because product URL, title, price, rating, monthly-sales signal and product attributes are sent to the HelpTools backend for the requested AI demand/listing action. If the user links an account, the extension also receives and displays the account email, so select the dashboard's applicable **Personally identifiable information / Authentication information** disclosure rather than claiming that no account data is handled. Confirm all three certification checkboxes only after they match the current implementation and privacy policy.
 
 ---
 

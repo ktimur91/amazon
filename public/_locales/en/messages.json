@@ -4,7 +4,7 @@
     "description": "Extension name shown in the Chrome Web Store and toolbar."
   },
   "extDesc": {
-    "message": "Amazon product research for sellers: monthly sales, opportunity score, margin calculator, photo downloader & AI listing generator.",
+    "message": "Amazon product research for sellers: monthly sales, opportunity score, photo downloader & AI listing generator.",
     "description": "Short summary shown under the name in the Chrome Web Store."
   }
 }
